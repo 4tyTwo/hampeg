@@ -1,0 +1,29 @@
+ CREATE Table video_info(
+	ID INT PRIMARY KEY NOT NULL, 
+	VIDEO_NAME TEXT NOT NULL,
+	CONFIG TEXT,
+	DURATION REAL NOT NULL,
+	BITRATE INT NOT NULL,
+	CODEC TEXT,
+	CODEC_PROFILE TEXT,
+	COLOR_ECNODING TEXT,
+	WIDTH INT,
+	HEIGHT INT,
+	SAR TEXT,
+	DAR TEXT,
+	FPS INT);
+	
+INSERT INTO video_info VALUES (
+	1,
+	'white_noise.mkv',
+	'--enable-gpl',
+	30.0,
+	74342,
+	'h264',
+	'High',
+	'yuv420p(progressive)',
+	1280,
+	720,
+	'1:1',
+	'16:9',
+	25);
