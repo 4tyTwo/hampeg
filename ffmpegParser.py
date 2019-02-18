@@ -1,10 +1,7 @@
 import subprocess
+import platform
 import os
-
-def durationToSeconds(strDuration):
-    tokens = strDuration[: -1].split(":")
-    res = int(tokens[0]) * 3600 + int(tokens[1]) * 60 + float(tokens[2])
-    return res
+from hampegUtils import sep, durationToSeconds
 
 def parseResolution(resolution):
     resolution = resolution.split("x")
@@ -13,15 +10,37 @@ def parseResolution(resolution):
         "HEIGHT": resolution[1]
     }
 
+def parseCodec(token):
+    res = dict()
+    border = token.index(' ')
+    res["CODEC"] = token[ : border]
+    res["CODEC_PROFILE"] = token[border + 1 : ][1 : -1]
+    return res
+
+def parseColor(tokens):
+    border = tokens.index('(')
+    return {
+        "COLOR_ENCODING": tokens[ : border]
+    }
+
+def parseResolutionAndRation(token):
+    tokens = token.split(' ')
+    res = parseResolution(tokens[0])
+    res["SAR"] = tokens[2]
+    res["DAR"] = tokens[4][ : -1]
+    return res
+
 def parseStreamInfo(streamInfo):
     res = dict()
-    res["CODEC"] = streamInfo[3]
-    res["CODEC_PROFILE"] = streamInfo[4][1 : -2]
-    res["COLOR_ENCODING"] = streamInfo[5][ : -1]
-    res = {**res, **parseResolution(streamInfo[6])} # merge dicts
-    res["SAR"] = streamInfo[8]
-    res["DAR"] = streamInfo[10][ : -2]
-    res["FPS"] = streamInfo[11]
+    tokens = " ".join(streamInfo[3 : ])
+    tokens = tokens.split(", ")
+    res = {**res, **parseCodec(tokens[0])}
+    while (tokens[1][-1] != ")"):
+        tokens[1] += tokens[2]
+        tokens.pop(2)
+    res = {**res, **parseColor(tokens[1])}
+    res = {**res, **parseResolutionAndRation(tokens[2])}
+    res["FPS"] = int(tokens[3].split(' ')[0])
     return res
 
 def getInfo(video):
@@ -33,11 +52,12 @@ def getInfo(video):
     content = out.readlines()
     out.close()
     res = dict()
-    res["VIDEO_NAME"] = video.split("/")[-1]
+    res["VIDEO_NAME"] = video.split(sep())[-1]
     for line in content:
         tokens = line.strip().split()
         if (tokens[0] == "configuration:"):
             res["CONFIG"] = " ".join(tokens[1 : ])
+            pass
         if (tokens[0] == "Duration:" and len(tokens) != 2):
             strDuration = tokens[1]
             res["DURATION"] = durationToSeconds(strDuration)

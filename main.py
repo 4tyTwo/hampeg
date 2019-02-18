@@ -6,24 +6,27 @@ import ffmpegParser
 import time
 from subprocess import Popen, STDOUT
 import platform
+from hampegUtils import sep
 
 
-def getLastId(dbcon, table_name):
-    c = dbcon.cursor()
-    c.execute("select max(ID) from " + table_name)
-    i = int(c.fetchone()[0])
-    c.close()
-    return i
+def deleteIfExists(filename):
+    if os.path.isfile(filename):
+        os.remove(filename)
 
-def sep():
-    return "\\" if platform.system() == "Windows" else "/"
-
-def runTime(rel_input_path, rel_output_path):
-    if os.path.isfile(rel_output_path):
-        os.remove(rel_output_path)
+def windowsRun(command):
     start = time.time()
     DEVNULL = open(os.devnull, 'wb', 0)
-    p = Popen(['ffmpeg', '-i', rel_input_path, "-c:v", "mpeg2video",rel_output_path], stdout=DEVNULL, stderr=STDOUT)
+    subprocess.run(command, stderr=STDOUT)
+    elapsed = round(time.time() - start, 4)
+    DEVNULL.close()
+    return {
+        "REAL_T": elapsed
+    }
+
+def runTime(command):
+    start = time.time()
+    DEVNULL = open(os.devnull, 'wb', 0)
+    p = Popen(command, stdout=DEVNULL, stderr=STDOUT)
     ru = os.wait4(p.pid, 0)[2]
     elapsed = time.time() - start
     DEVNULL.close()
@@ -47,16 +50,18 @@ rel_output_path = "resources" + sep + "noise" + sep + full_output_name
 input_path = dir_path + rel_input_path
 output_path = dir_path + rel_output_path
 
-command = ['ffmpeg', '-i', rel_input_path,"-c:v", "mpeg2video", rel_output_path],
+command = ['ffmpeg', '-i', str(rel_output_path), '-c:v', 'h264_nvenc', '-rc', 'constqp', '-qp', '28', str(rel_input_path)]
 
 srcInfo = ffmpegParser.getInfo(rel_input_path)
-print("Run started")
-runInfo = runTime(str(rel_input_path), str(rel_output_path))
-print("Run finished, est time:", runInfo["REAL_T"])
+deleteIfExists(rel_input_path)
+if platform.system() == "Windows":
+    runInfo = windowsRun(command)
+else:
+    runInfo = runTime(str(rel_input_path), str(rel_output_path))
 destInfo = ffmpegParser.getInfo(rel_output_path)
 dbops.insert_values(conn, table_name, srcInfo)
 dbops.insert_values(conn, table_name, destInfo)
-id = getLastId(conn, table_name)
+id = dbops.getLastId(conn, table_name)
 runInfo["SOURCE"] = id - 1
 runInfo["DEST"] = id
 dbops.insert_values(conn, "RUN_INFO", runInfo)

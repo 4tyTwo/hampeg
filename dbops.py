@@ -2,6 +2,13 @@ import sqlite3
 import os
 from sqlite3 import Error
 
+def getLastId(dbcon, table_name):
+    c = dbcon.cursor()
+    c.execute("select max(ID) from " + table_name)
+    i = int(c.fetchone()[0])
+    c.close()
+    return i
+
 def connect_db(database):
     if not(os.path.isfile(database)):
         print("No database", database, "exists")
