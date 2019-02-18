@@ -7,20 +7,17 @@ def durationToSeconds(strDuration):
     return res
 
 def parseResolution(resolution):
-    res = dict()
     resolution = resolution.split("x")
-    res["width"] = resolution[0]
-    res["height"] = resolution[1]
     return {
-        "width" : resolution[0],
-        "height": resolution[1]
+        "WIDTH" : resolution[0],
+        "HEIGHT": resolution[1]
     }
 
 def parseStreamInfo(streamInfo):
     res = dict()
-    res["codec"] = streamInfo[3]
-    res["codec profile"] = streamInfo[4][1 : -2]
-    res["color encoding"] = streamInfo[5][ : -1]
+    res["CODEC"] = streamInfo[3]
+    res["CODEC_PROFILE"] = streamInfo[4][1 : -2]
+    res["COLOR_ENCODING"] = streamInfo[5][ : -1]
     res = {**res, **parseResolution(streamInfo[6])} # merge dicts
     res["SAR"] = streamInfo[8]
     res["DAR"] = streamInfo[10][ : -2]
@@ -36,15 +33,15 @@ def getInfo(video):
     content = out.readlines()
     out.close()
     res = dict()
-    res["name"] = video.split("\\")[-1]
+    res["VIDEO_NAME"] = video.split("/")[-1]
     for line in content:
         tokens = line.strip().split()
         if (tokens[0] == "configuration:"):
-            res["config"] = " ".join(tokens[1 : ])
+            res["CONFIG"] = " ".join(tokens[1 : ])
         if (tokens[0] == "Duration:" and len(tokens) != 2):
             strDuration = tokens[1]
-            res["duration"] = durationToSeconds(strDuration)
-            res["bitrate"]  = int(tokens[-2])
+            res["DURATION"] = durationToSeconds(strDuration)
+            res["BITRATE"]  = int(tokens[-2])
         if (tokens[0] == "Stream" and tokens[2] == "Video:"):
             res = {**res, **parseStreamInfo(tokens)}
     os.remove(tmp)

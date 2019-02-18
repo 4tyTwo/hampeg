@@ -30,3 +30,13 @@ def setup_database(database, table_name):
     conn = connect_db(database)
     check_table_exists(conn, table_name)
     return conn
+
+def insert_values(dbcon, table_name, kvdict):
+    fields = ",".join(list(kvdict.keys()))
+    values = list(kvdict.values())
+    wildcards = ",".join("?" * len(values))
+    qs = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES (" + wildcards + ")"
+    c = dbcon.cursor()
+    c.executemany(qs, (values,))
+    dbcon.commit()
+    c.close()
