@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from hampegUtils import formatWildcards, formatFields
 from sqlite3 import Error
 
 def getLastId(dbcon, table_name):
@@ -9,7 +10,7 @@ def getLastId(dbcon, table_name):
     c.close()
     return i
 
-def connect_db(database):
+def connectToDb(database):
     if not(os.path.isfile(database)):
         print("No database", database, "exists")
         exit(1)
@@ -20,7 +21,7 @@ def connect_db(database):
         exit(1)
     return conn
 
-def check_table_exists(dbcon, table_name):
+def tableExists(dbcon, table_name):
     dbcur = dbcon.cursor()
     t = (table_name, )
     dbcur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", t)
@@ -28,22 +29,36 @@ def check_table_exists(dbcon, table_name):
     if (fetch != None):
         if (fetch[0] == table_name):
             dbcur.close()
-            return
+            return True
     dbcur.close()
-    print("No table", table_name, "exists")
-    exit(1)
+    return False
 
-def setup_database(database, table_name):
-    conn = connect_db(database)
-    check_table_exists(conn, table_name)
+def setupDb(database, table_name):
+    conn = connectToDb(database)
+    if not(tableExists(conn, table_name)):
+        print("No table", table_name, "exists")
+        exit(1)
     return conn
 
-def insert_values(dbcon, table_name, kvdict):
-    fields = ",".join(list(kvdict.keys()))
-    values = list(kvdict.values())
-    wildcards = ",".join("?" * len(values))
+def insert(dbcon, table_name, record):
+    fields = formatFields(record)
+    values = list(record.values())
+    wildcards = formatWildcards(values)
     qs = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES (" + wildcards + ")"
     c = dbcon.cursor()
     c.executemany(qs, (values,))
     dbcon.commit()
     c.close()
+
+def recordExists(dbcon, table_name, record):
+    keys = list(record.keys())
+    qs = "Select * from " + table_name + " where "
+    kvs = []
+    for key in keys:
+        kvs.append("=".join([key, "'" + str(record[key])]) + "'")
+    qs += " and ".join(kvs)
+    c = dbcon.cursor()
+    c.execute(qs)
+    fetch = (c.fetchone())
+    c.close()
+    return fetch != None

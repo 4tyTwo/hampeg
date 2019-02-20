@@ -1,8 +1,8 @@
 import subprocess
 import importlib
 import os
-import dbops
-import ffmpegParser
+import dbOps
+import hampegUtils
 import time
 from subprocess import Popen, STDOUT
 import platform
@@ -12,6 +12,13 @@ from hampegUtils import sep
 def deleteIfExists(filename):
     if os.path.isfile(filename):
         os.remove(filename)
+
+
+def run(command):
+    if platform.system() == "Windows":
+        windowsRun(command)
+    else
+        unixRun(command)
 
 def windowsRun(command):
     start = time.time()
@@ -23,7 +30,7 @@ def windowsRun(command):
         "REAL_T": elapsed
     }
 
-def runTime(command):
+def unixRun(command):
     start = time.time()
     DEVNULL = open(os.devnull, 'wb', 0)
     p = Popen(command, stdout=DEVNULL, stderr=STDOUT)
@@ -38,31 +45,32 @@ def runTime(command):
 
 sep = sep()
 dir_path = os.path.dirname(os.path.realpath(__file__))
-database_name = dir_path + sep + "acceleration.db"
+database_name = "acceleration.db"
 table_name = "VIDEO_INFO"
-conn = dbops.setup_database(database_name, table_name)
+conn = dbOps.setupDb(database_name, table_name)
 video_name = "white_noise"
 ext = "mkv"
-full_input_name = video_name + "." + ext
-full_output_name = video_name + "_mpeg" + "." + ext
-rel_input_path =  "resources" + sep + "noise" + sep + full_input_name
-rel_output_path = "resources" + sep + "noise" + sep + full_output_name
+input_codec = "h264"
+output_codec = "mpeg2video"
+full_input_name = video_name + "_" + input_codec + "." + ext
+full_output_name = video_name + "_" + output_codec + "." + ext
+rel_input_path =  "resources" + sep + "input" + sep + full_input_name
+rel_output_path = "resources" + sep + "output" + sep + full_output_name
 input_path = dir_path + rel_input_path
 output_path = dir_path + rel_output_path
 
-command = ['ffmpeg', '-i', str(rel_output_path), '-c:v', 'h264_nvenc', '-rc', 'constqp', '-qp', '28', str(rel_input_path)]
+# command = ['ffmpeg', '-i', str(rel_output_path), '-c:v', 'h264_nvenc', '-rc', 'constqp', '-qp', '28', str(rel_input_path)]
 
-srcInfo = ffmpegParser.getInfo(rel_input_path)
-deleteIfExists(rel_input_path)
-if platform.system() == "Windows":
-    runInfo = windowsRun(command)
-else:
-    runInfo = runTime(str(rel_input_path), str(rel_output_path))
-destInfo = ffmpegParser.getInfo(rel_output_path)
-dbops.insert_values(conn, table_name, srcInfo)
-dbops.insert_values(conn, table_name, destInfo)
-id = dbops.getLastId(conn, table_name)
-runInfo["SOURCE"] = id - 1
-runInfo["DEST"] = id
-dbops.insert_values(conn, "RUN_INFO", runInfo)
+srcInfo = hampegUtils.getInfo(rel_input_path)
+# deleteIfExists(rel_input_path)
+run(command)
+# destInfo = hampegUtils.getInfo(rel_output_path)
+if not(dbOps.recordExists(conn, table_name, srcInfo)):
+    dbOps.insert(conn, table_name, srcInfo)
+# dbOps.insert(conn, table_name, destInfo)
+# id = dbOps.getLastId(conn, table_name)
+# runInfo["SOURCE"] = id - 1
+# runInfo["DEST"] = id
+# dbOps.insert(conn, "RUN_INFO", runInfo)
+
 conn.close()

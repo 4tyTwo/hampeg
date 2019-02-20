@@ -55,9 +55,6 @@ def getInfo(video):
     res["VIDEO_NAME"] = video.split(sep())[-1]
     for line in content:
         tokens = line.strip().split()
-        if (tokens[0] == "configuration:"):
-            res["CONFIG"] = " ".join(tokens[1 : ])
-            pass
         if (tokens[0] == "Duration:" and len(tokens) != 2):
             strDuration = tokens[1]
             res["DURATION"] = durationToSeconds(strDuration)
