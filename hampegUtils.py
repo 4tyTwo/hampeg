@@ -48,19 +48,19 @@ def parseStreamInfo(streamInfo):
     res = dict()
     tokens = " ".join(streamInfo[3 : ])
     tokens = tokens.split(", ")
-    res = {**res, **parseCodec(tokens[0])}
+    res.update(parseCodec(tokens[0]))
     while (tokens[1][-1] != ")"):
         tokens[1] += tokens[2]
         tokens.pop(2)
-    res = {**res, **parseColor(tokens[1])}
-    res = {**res, **parseResolutionAndRation(tokens[2])}
+    res.update(parseColor(tokens[1]))
+    res.update(parseResolutionAndRation(tokens[2]))
     res["FPS"] = int(tokens[3].split(' ')[0])
     return res
 
 def getInfo(video):
     tmp = "tmp"
     out = open(tmp, "w")
-    subprocess.run(["ffmpeg", "-i", video], stderr = out)
+    subprocess.call(["ffmpeg", "-i", video], stderr = out)
     out.close()
     out = open(tmp, "r")
     content = out.readlines()
@@ -74,6 +74,7 @@ def getInfo(video):
             res["DURATION"] = durationToSeconds(strDuration)
             res["BITRATE"]  = int(tokens[-2])
         if (tokens[0] == "Stream" and tokens[2] == "Video:"):
-            res = {**res, **parseStreamInfo(tokens)}
+            res.update(parseStreamInfo(tokens))
+            print()
     os.remove(tmp)
     return res
