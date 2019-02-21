@@ -3,13 +3,6 @@ import os
 from hampegUtils import formatWildcards, formatFields
 from sqlite3 import Error
 
-def getLastId(dbcon, table_name):
-    c = dbcon.cursor()
-    c.execute("select max(ID) from " + table_name)
-    i = int(c.fetchone()[0])
-    c.close()
-    return i
-
 def connectToDb(database):
     if not(os.path.isfile(database)):
         print("No database", database, "exists")
@@ -50,9 +43,9 @@ def insert(dbcon, table_name, record):
     dbcon.commit()
     c.close()
 
-def recordExists(dbcon, table_name, record):
+def recordId(dbcon, table_name, record):
     keys = list(record.keys())
-    qs = "Select * from " + table_name + " where "
+    qs = "Select ID from " + table_name + " where "
     kvs = []
     for key in keys:
         kvs.append("=".join([key, "'" + str(record[key])]) + "'")
@@ -60,5 +53,10 @@ def recordExists(dbcon, table_name, record):
     c = dbcon.cursor()
     c.execute(qs)
     fetch = (c.fetchone())
-    c.close()
-    return fetch != None
+    if fetch != None:
+        i = int(fetch[0])
+        c.close()
+        return i
+    else:
+        c.close()
+        return -1
