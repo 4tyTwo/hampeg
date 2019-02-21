@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from hampegUtils import formatWildcards, formatFields
+import subprocess
 from sqlite3 import Error
 
 def connectToDb(database):
@@ -14,24 +15,8 @@ def connectToDb(database):
         exit(1)
     return conn
 
-def tableExists(dbcon, table_name):
-    dbcur = dbcon.cursor()
-    t = (table_name, )
-    dbcur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", t)
-    fetch = (dbcur.fetchone())
-    if (fetch != None):
-        if (fetch[0] == table_name):
-            dbcur.close()
-            return True
-    dbcur.close()
-    return False
-
-def setupDb(database, table_name):
-    conn = connectToDb(database)
-    if not(tableExists(conn, table_name)):
-        print("No table", table_name, "exists")
-        exit(1)
-    return conn
+def setupDb():
+    subprocess.call(["./initialize_tables.sh"])
 
 def insert(dbcon, table_name, record):
     fields = formatFields(record)
