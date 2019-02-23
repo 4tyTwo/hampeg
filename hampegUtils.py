@@ -66,15 +66,14 @@ def getInfo(video):
     content = out.readlines()
     out.close()
     res = dict()
-    res["VIDEO_NAME"] = video.split(sep())[-1]
+    res["VIDEO_NAME"] = video
     for line in content:
         tokens = line.strip().split()
         if (tokens[0] == "Duration:" and len(tokens) != 2):
             strDuration = tokens[1]
             res["DURATION"] = durationToSeconds(strDuration)
-            res["BITRATE"]  = int(tokens[-2])
+            res["BITRATE"]  = int(int(tokens[-2])/100) * 100
         if (tokens[0] == "Stream" and tokens[2] == "Video:"):
             res.update(parseStreamInfo(tokens))
-            print()
     os.remove(tmp)
     return res
