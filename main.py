@@ -70,11 +70,17 @@ def test(dbcon, video_table_name, res_table_name, commandPair):
     cpu_command = commandPair["cpu"]
     setupAndRun(dbcon, video_table_name, res_table_name, cpu_command, False)
     gpu_command = commandPair["gpu"]
-    hwaccel = commandPair["hwaccel"]
     hwaccel_type = commandPair["hwaccel type"]
-    setupAndRun(dbcon, video_table_name, res_table_name, gpu_command, hwaccel, hwaccel_type)
+    setupAndRun(dbcon, video_table_name, res_table_name, gpu_command, True, hwaccel_type)
     
 
+def streamtest(dbcon, video_table_name, res_table_name, commands):
+    i = 1
+    for commandPair in commands:
+        print("Running command pair №", i)
+        test(dbcon, video_table_name, res_table_name, commandPair)
+        print("Command pair №", i, "finished")
+        i += 1
 
 #sep = hampegUtils.sep()
 #dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -83,28 +89,29 @@ database_name = "acceleration.db"
 if not(os.path.isfile(database_name)):
     dbOps.setupDb()
 conn = dbOps.connectToDb(database_name)
-# video_name = "white_noise"
-# ext = "mkv"
-# input_codec = "h264"
-# output_codec = "mpeg2video"
-# full_input_name = video_name + "_" + input_codec + "." + ext
-# full_output_name = video_name + "_" + output_codec + "." + ext
-# rel_input_path =  "resources" + sep + "input" + sep + full_input_name
-# rel_output_path = "resources" + sep + "output" + sep + full_output_name
+input_name = str("resources/input/white_noise_h264.mkv")
 
-
-#command = ['ffmpeg', '-i', str(rel_input_path), '-c:v', 'h264_nvenc', '-rc', 'constqp', '-qp', '28', str(rel_output_path)]
-#command = ['ffmpeg', '-i', str(rel_input_path), '-c:v', output_codec, str(rel_output_path)]
-
-['ffmpeg' '-i' "resources/input/white_noise_h264.mkv" '-c:v h264' "resources/output/white_noise_h264.mkv"]
-commandPair = {
-    "cpu": ['ffmpeg', '-i', "resources/input/white_noise_h264.mkv", '-c:v', 'h264',       '-b', '74278k', "resources/output/white_noise_h264.mkv"],
-    "gpu": ['ffmpeg', '-i', "resources/input/white_noise_h264.mkv", '-c:v', 'h264_nvenc', '-b', '74278k', "resources/output/white_noise_h264_nvenc.mkv"],
-    "hwaccel": True,
-    "hwaccel type":  "nvenc"
+commandPair0 = {
+    "cpu": ['ffmpeg', '-i', input_name, '-c:v', 'h264',       '-b:v', '74278k', "resources/output/white_noise_h264.mkv"],
+    "gpu": ['ffmpeg', '-i', input_name, '-c:v', 'h264_nvenc', '-b:v', '74278k', "resources/output/white_noise_h264_nvenc.mkv"],
+    "hwaccel type":  "h264_nvenc"
 }
 
-test(conn, "VIDEO_INFO", "RUN_INFO", commandPair)
+commandPair1 = {
+    "cpu": ['ffmpeg', '-i', input_name, '-c:v', 'libx265',    '-b:v', '74278k', "resources/output/white_noise_hevc.mkv"],
+    "gpu": ['ffmpeg', '-i', input_name, '-c:v', 'nvenc_hevc', '-b:v', '74278k', "resources/output/white_noise_hevc_nvenc.mkv"],
+    "hwaccel type":  "nvenc_hevc"
+}
+
+commandPair2 = {
+    "cpu": ['ffmpeg', '-c:v', 'h264', '-i', input_name, '-vcodec', 'h264', '-b:v', '74278k', "resources/output/white_noise_h264.mkv"],
+    "gpu": ['ffmpeg', '-hwaccel', 'cuvid', '-c:v', 'h264_cuvid', '-i', input_name, '-vcodec', 'h264_nvenc', '-b:v', '74278k', "resources/output/white_noise_cuvid_h264.mkv"],
+    "hwaccel type": "h264_cuvid h264_nvenc"
+}
+
+#test(conn, "VIDEO_INFO", "RUN_INFO", commandPair0)
+
+streamtest(conn, "VIDEO_INFO", "RUN_INFO", [commandPair0, commandPair1, commandPair2])
 
 conn.close()
 print("Finished")
