@@ -82,10 +82,7 @@ def streamtest(dbcon, video_table_name, res_table_name, commands):
         print("Command pair №", i, "finished")
         i += 1
 
-#sep = hampegUtils.sep()
-#dir_path = os.path.dirname(os.path.realpath(__file__))
 database_name = "acceleration.db"
-#table_name = "VIDEO_INFO"
 if not(os.path.isfile(database_name)):
     dbOps.setupDb()
 conn = dbOps.connectToDb(database_name)
@@ -108,8 +105,6 @@ commandPair2 = {
     "gpu": ['ffmpeg', '-hwaccel', 'cuvid', '-c:v', 'h264_cuvid', '-i', input_name, '-vcodec', 'h264_nvenc', '-b:v', '74278k', "resources/output/white_noise_cuvid_h264.mkv"],
     "hwaccel type": "h264_cuvid h264_nvenc"
 }
-
-#test(conn, "VIDEO_INFO", "RUN_INFO", commandPair0)
 
 streamtest(conn, "VIDEO_INFO", "RUN_INFO", [commandPair0, commandPair1, commandPair2])
 
