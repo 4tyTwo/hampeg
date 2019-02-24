@@ -80,6 +80,7 @@ def streamtest(dbcon, video_table_name, res_table_name, commands):
         print("Running command pair №", i)
         test(dbcon, video_table_name, res_table_name, commandPair)
         print("Command pair №", i, "finished")
+        time.sleep(10) # cooldown to avoid throttling
         i += 1
 
 database_name = "acceleration.db"
@@ -96,17 +97,27 @@ commandPair0 = {
 
 commandPair1 = {
     "cpu": ['ffmpeg', '-i', input_name, '-c:v', 'libx265',    '-b:v', '74278k', "resources/output/white_noise_hevc.mkv"],
-    "gpu": ['ffmpeg', '-i', input_name, '-c:v', 'nvenc_hevc', '-b:v', '74278k', "resources/output/white_noise_hevc_nvenc.mkv"],
-    "hwaccel type":  "nvenc_hevc"
+    "gpu": ['ffmpeg', '-i', input_name, '-c:v', 'hevc_nvenc', '-b:v', '74278k', "resources/output/white_noise_hevc_nvenc.mkv"],
+    "hwaccel type":  "hevc_nvenc"
 }
 
 commandPair2 = {
-    "cpu": ['ffmpeg', '-c:v', 'h264', '-i', input_name, '-vcodec', 'h264', '-b:v', '74278k', "resources/output/white_noise_h264.mkv"],
+    "cpu": ['ffmpeg', '-c:v', 'h264', '-i', input_name, '-vcodec', 'h264', '-b:v', '74278k', "resources/output/white_noise_transcode_h264.mkv"],
     "gpu": ['ffmpeg', '-hwaccel', 'cuvid', '-c:v', 'h264_cuvid', '-i', input_name, '-vcodec', 'h264_nvenc', '-b:v', '74278k', "resources/output/white_noise_cuvid_h264.mkv"],
     "hwaccel type": "h264_cuvid h264_nvenc"
 }
 
-streamtest(conn, "VIDEO_INFO", "RUN_INFO", [commandPair0, commandPair1, commandPair2])
+commandPair3 = {
+    "cpu": ['ffmpeg', '-c:v', 'h264', '-i', input_name, '-vcodec', 'libx265', '-b:v', '74278k', "resources/output/white_noise_trancode_hevc.mkv"],
+    "gpu": ['ffmpeg', '-hwaccel', 'cuvid', '-c:v', 'h264_cuvid', '-i', input_name, '-vcodec', 'hevc_nvenc', '-b:v', '74278k', "resources/output/white_noise_cuvid_h264.mkv"],
+    "hwaccel type": "h264_cuvid hevc_nvenc"  
+}
+
+streamtest(conn, "VIDEO_INFO", "RUN_INFO", [commandPair0, commandPair1, commandPair2, commandPair3])
+time.sleep(15)
+streamtest(conn, "VIDEO_INFO", "RUN_INFO", [commandPair0, commandPair1, commandPair2, commandPair3])
+time.sleep(15)
+streamtest(conn, "VIDEO_INFO", "RUN_INFO", [commandPair0, commandPair1, commandPair2, commandPair3])
 
 conn.close()
 print("Finished")
